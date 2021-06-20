@@ -690,7 +690,7 @@ int SNDWAV_SetParams2(SNDPCMContainer_t *sndpcm, uint16_t freq, uint8_t channels
 
 SNDPCMContainer_t *wmix_alsa_init(uint8_t channels, uint8_t sample, uint16_t freq, char p_or_c)
 {
-    char devicename[] = "default";
+    char devicename[] = "hw:1,0";
 
     SNDPCMContainer_t *playback = (SNDPCMContainer_t *)calloc(1, sizeof(SNDPCMContainer_t));
 
