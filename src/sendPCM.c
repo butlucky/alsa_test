@@ -25,7 +25,7 @@
 #define SEND_TIMESTAMP 160 //320 bytes PCM --> 160 bytes PCMA/PCMU
 unsigned char pcm[320] = { 0 };
 
-int  stero_to_mono(unsigned char *src,unsigned char *dst, int len )
+static int  stero_to_mono(unsigned char *src,unsigned char *dst, int len )
 {
     int i = 0,j = 0;
 

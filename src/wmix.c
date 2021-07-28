@@ -41,7 +41,7 @@ void delayus(unsigned int us)
     select(0, NULL, NULL, NULL, &delay);
 }
 
-int  stero_to_mono(unsigned char *src,unsigned char *dst, int len )
+static int  stero_to_mono(unsigned char *src,unsigned char *dst, int len )
 {
     int i = 0,j = 0;
 
@@ -148,7 +148,6 @@ int SNDWAV_ReadPcm(SNDPCMContainer_t *sndpcm, size_t rcount)
     if (count != sndpcm->chunk_size) {
         count = sndpcm->chunk_size;
     }
-    printf("------- %d -%d - %d ---------\n",__LINE__,rcount,count);
 
     while (count > 0) {
         r = snd_pcm_readi(sndpcm->handle, data, count);

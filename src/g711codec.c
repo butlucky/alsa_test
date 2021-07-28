@@ -225,9 +225,9 @@ int PCM2G711a( char *InAudioData, char *OutAudioData, int DataLen, int reserve )
 	// printf("DataLen = %d, %s, %d\n", DataLen, __func__, __LINE__);
 
 	int Retaen = 0; 
-	// printf("G711a encode start......\n");
+	//printf("G711a encode start......\n");
 	Retaen = g711a_encode( (unsigned char *)OutAudioData, (short*)InAudioData, DataLen/2 );
-	// printf("Retaen = %d, %s, %d\n", Retaen, __func__, __LINE__);
+	//printf("DataLen = %d ,Retaen = %d, %s, %d\n", DataLen,Retaen, __func__, __LINE__);
 
 	return Retaen; //index successfully encoded data len.
 }
@@ -244,9 +244,9 @@ int PCM2G711u( char *InAudioData, char *OutAudioData, int DataLen, int reserve )
 	// printf("DataLen = %d, %s, %d\n", DataLen, __func__, __LINE__);
 
 	int Retuen = 0; 
-	// printf("G711u encode start......\n");
+	printf("G711u encode start......\n");
 	Retuen = g711u_encode( (unsigned char *)OutAudioData, (short*)InAudioData, DataLen/2 );
-	// printf("Retuen = %d, %s, %d\n", Retuen, __func__, __LINE__);
+	printf("Retuen = %d, %s, %d\n", Retuen, __func__, __LINE__);
 
 	return Retuen; 
 }
