@@ -41,6 +41,18 @@ void delayus(unsigned int us)
     select(0, NULL, NULL, NULL, &delay);
 }
 
+int  stero_to_mono(unsigned char *src,unsigned char *dst, int len )
+{
+    int i = 0,j = 0;
+
+    for(i;i<len;i+=4,j+=2){
+        dst[j] = src[i];
+        dst[j+1] = src[i+1];
+    }
+
+    return len/2;
+}
+
 /*******************************************************************************
  * 名称: sys_volume_set
  * 功能: 扬声器音量设置
@@ -136,6 +148,7 @@ int SNDWAV_ReadPcm(SNDPCMContainer_t *sndpcm, size_t rcount)
     if (count != sndpcm->chunk_size) {
         count = sndpcm->chunk_size;
     }
+    printf("------- %d -%d - %d ---------\n",__LINE__,rcount,count);
 
     while (count > 0) {
         r = snd_pcm_readi(sndpcm->handle, data, count);
@@ -645,7 +658,9 @@ int SNDWAV_SetParams2(SNDPCMContainer_t *sndpcm, uint16_t freq, uint8_t channels
         return -1;
     }
     if (buffer_time > 500000) buffer_time = 500000;
-    period_time = buffer_time / 4;
+ 
+    // 8k-stero  320bytes 160frame  50fps  period-size 20ms
+    period_time = 20000;
 
     if (snd_pcm_hw_params_set_buffer_time_near(sndpcm->handle, hwparams, &buffer_time, 0) < 0) {
         fprintf(stderr, "Error snd_pcm_hw_params_set_buffer_time_near\n");
@@ -1866,6 +1881,9 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
     //
     uint8_t loopWord;
     loopWord = wmtp->wmix->loopWordRecord;
+    unsigned char *dstpcm = NULL;
+    unsigned char pcmbuf[320] = { 0 };
+
     //
     //参数检查,是否在允许的变参范围内
     if(freq != WMIX_FREQ){
@@ -1918,7 +1936,7 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
     //生成sdp文件
     rtp_create_sdp(
         "/tmp/record.sdp", 
-        path, port, chn, freq,
+        path, port, chn/chn, freq,
         RTP_PAYLOAD_TYPE_PCMA);
     //
     bytes_p_second = WMIX_CHANNELS*WMIX_SAMPLE/8*WMIX_FREQ;
@@ -1927,7 +1945,8 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
     buffSize = 320;
     buff = malloc(2*WMIX_SAMPLE/8*1024);
 #else
-    buffSize = 320*8/record->bits_per_frame;
+    // frame size
+    buffSize = 320*8/record->bits_per_sample;
 #endif
     //
     if(wmtp->wmix->debug) printf("<< RTP-SEND-PCM: %s:%d start >>\n   通道数: %d\n   采样位数: %d bit\n   采样率: %d Hz\n\n", 
@@ -1979,7 +1998,8 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
 #if(WMIX_MODE==1)
         ret = hiaudio_ai_read(buff, buffSize, &record_addr, true);
 #else
-        ret = SNDWAV_ReadPcm(record, buffSize)*8;
+        ret = SNDWAV_ReadPcm(record, buffSize);
+        ret  *= record->bits_per_frame/8 ;
 #endif
         if(ret > 0)
         {
@@ -1994,12 +2014,17 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
                     second = total/bytes_p_second;
                     if(wmtp->wmix->debug) printf("  RTP-SEND-PCM: %s:%d %02d:%02d\n", path, port, second/60, second%60);
                 }
-            }
-            //
+        }
+        dstpcm = record->data_buf;
+        if(chn == 2) {
+            dstpcm = pcmbuf;
+            ret = stero_to_mono(record->data_buf,dstpcm, ret);
+        }
+
 #if(WMIX_MODE==1)
             ret = PCM2G711a(buff, rtpPacket.payload, ret, 0);
 #else
-            ret = PCM2G711a(record->data_buf, rtpPacket.payload, ret, 0);
+            ret = PCM2G711a(dstpcm, rtpPacket.payload, ret, 0);
 #endif
             if(ctrl == 0)
             {
@@ -2020,8 +2045,8 @@ void wmix_rtp_send_pcma_thread(WMixThread_Param *wmtp)
             }
             //
             tick2 = getTickUs();
-            if(tick2 > tick1 && tick2 - tick1 < 18000)
-                delayus(18000 - (tick2 - tick1));
+            if(tick2 > tick1 && tick2 - tick1 < 20000)
+                delayus(20000 - (tick2 - tick1));
         }
         else
         {
